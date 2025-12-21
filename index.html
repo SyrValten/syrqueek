@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<!-- En el head de tu HTML, agrega esto: -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuros Bitmart - Análisis de Trades</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header simplificado -->
+        <div class="header">
+            <div class="header-top">
+                <h1>Futuros Bitmart</h1>
+                <div class="header-actions">
+                    <div class="symbol-filter">
+                        <select id="symbolFilter">
+                            <option value="">Todos los símbolos</option>
+                            <!-- Las opciones se llenarán dinámicamente -->
+                        </select>
+                    </div>
+                    <button class="menu-btn" id="menuBtn">
+                        <i class="fas fa-bars"></i> Menú
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menú desplegable (oculto inicialmente) -->
+        <div class="dropdown-menu" id="dropdownMenu">
+            <div class="menu-content">
+                <h3>Opciones</h3>
+                <ul>
+                    <li><a href="#" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Exportar PDF</a></li>
+                    <li><a href="#" id="resetBtn"><i class="fas fa-redo"></i> Reiniciar Análisis</a></li>
+                    <li class="theme-toggle">
+                        <label for="themeToggle">
+                            <i class="fas fa-moon"></i> Modo Oscuro
+                            <div class="switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="slider"></span>
+                            </div>
+                        </label>
+                    </li>
+                    <li><a href="#" id="helpBtn"><i class="fas fa-question-circle"></i> Ayuda</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Sección de Upload (se ocultará después del análisis) -->
+        <div class="upload-section">
+            <div class="upload-box">
+                <h3>Cargar Archivos CSV</h3>
+                <div class="file-inputs">
+                    <div class="file-input">
+                        <label for="csv1">CSV1 (Órdenes):</label>
+                        <input type="file" id="csv1" accept=".csv">
+                        <span id="csv1-status" class="file-status">No cargado</span>
+                    </div>
+                    <div class="file-input">
+                        <label for="csv2">CSV2 (Trades):</label>
+                        <input type="file" id="csv2" accept=".csv">
+                        <span id="csv2-status" class="file-status">No cargado</span>
+                    </div>
+                    <div class="file-input">
+                        <label for="csv3">CSV3 (Fees y Funding):</label>
+                        <input type="file" id="csv3" accept=".csv">
+                        <span id="csv3-status" class="file-status">No cargado</span>
+                    </div>
+                </div>
+                
+                <div class="action-bar">
+                    <button id="analyzeBtn" class="analyze-btn" disabled>
+                        <span class="spinner" id="analyzeSpinner"></span>
+                        <i class="fas fa-chart-line"></i> Analizar Trades
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección KPI (antes Estadísticas) -->
+        <div class="kpi-section">
+            <h3>KPI</h3>
+            <div class="kpi-grid">
+                <!-- Total Trades -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Total Trades</div>
+                    <div id="totalTrades" class="kpi-value">0</div>
+                </div>
+                
+                <!-- Ganancia Neta (Net Profit) -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Ganancia Neta</div>
+                    <div id="totalNet" class="kpi-value positive">0.00</div>
+                    <div class="kpi-subtitle"><span id="totalRealized" class="kpi-subvalue">0.00</span></div>
+                </div>
+                
+                <!-- Win Rate -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Win Rate</div>
+                    <div id="winRate" class="kpi-value">0%</div>
+                    <div class="kpi-subtitle">G/P: <span id="winLossRatio" class="kpi-subvalue">0/0</span></div>
+                </div>
+                
+                <!-- Profit Factor -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Profit Factor</div>
+                    <div id="profitFactor" class="kpi-value">0.00</div>
+                    <div class="kpi-subtitle">Rendimiento</div>
+                </div>
+                
+                <!-- Avg Win/Loss -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Avg Win/Loss</div>
+                    <div id="avgWinLoss" class="kpi-value">0.00</div>
+                    <div class="kpi-subtitle">Promedio por trade</div>
+                </div>
+                
+                <!-- Funding Fee Total -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Funding Fee</div>
+                    <div id="totalFunding" class="kpi-value negative">0.00</div>
+                    <div class="kpi-subtitle">Total fees</div>
+                </div>
+                
+                <!-- Perdidas Totales -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Pérdidas Totales</div>
+                    <div id="totalLosses" class="kpi-value negative">0.00</div>
+                    <div class="kpi-subtitle">Total negativo</div>
+                </div>
+                
+                <!-- Total Fees -->
+                <div class="kpi-card">
+                    <div class="kpi-title">Fees</div>
+                    <div id="totalFees" class="kpi-value negative">0.00</div>
+                    <div class="kpi-subtitle">Comisiones</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Gráficos -->
+        <div class="charts-section">
+            <h3>Gráficos de Análisis</h3>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <canvas id="cumulativeProfitChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="netProfitByDayChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="profitBySymbolChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tradesDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Esperando datos para análisis...</p>
+            </div>
+            <table id="tradesTable" class="trades-table">
+                <thead>
+                    <tr>
+                        <th>Día y Hora</th>
+                        <th>Símbolo</th>
+                        <th>Realized Profit</th>
+                        <th>Fee</th>
+                        <th>Funding Fee</th>
+                        <th>Net Profit</th>
+                    </tr>
+                </thead>
+                <tbody id="tradesBody">
+                    <!-- Los datos se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="charts.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="charts.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
