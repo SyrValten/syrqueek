@@ -797,3 +797,17 @@ body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button.current
         height: 200px;
     }
 }
+
+/* Ocultar columnas de Fee y Funding Fee en móviles */
+@media (max-width: 767px) {
+    .fee-column,
+    .funding-column {
+        display: none;
+    }
+    
+    /* También ocultar las celdas correspondientes en el tbody */
+    .trades-table tbody tr td:nth-child(4),
+    .trades-table tbody tr td:nth-child(5) {
+        display: none;
+    }
+}
