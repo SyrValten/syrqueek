@@ -39,6 +39,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const csv2Status = document.getElementById('csv2-status');
     const csv3Status = document.getElementById('csv3-status');
     
+    // Modal para detalles móviles
+    const tradeModal = document.getElementById('tradeModal');
+    const modalDetails = document.getElementById('modalDetails');
+    const closeModal = tradeModal.querySelector('.close');
+    
+    // Cerrar modal al hacer clic en la X
+    closeModal.onclick = function() {
+        tradeModal.style.display = 'none';
+    }
+    
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+        if (event.target == tradeModal) {
+            tradeModal.style.display = 'none';
+        }
+    }
+    
     // Elementos de KPI
     const totalTradesElement = document.getElementById('totalTrades');
     const totalRealizedElement = document.getElementById('totalRealized');
@@ -1566,21 +1583,17 @@ function exportToPDF() {
         console.log('Calculando net profit...');
         
         return trades.map(trade => {
-            // Si funding fee es negativo, ya representa un costo que se resta
-            // Necesitamos convertirlo a positivo para la fórmula
-            const fundingFeeForCalculation = trade.fundingFee < 0 ? Math.abs(trade.fundingFee) : trade.fundingFee;
-            
-            // Fórmula CORREGIDA: Net Profit = Realized Profit - Fee - |Funding Fee|
-            trade.netProfit = trade.realizedProfit - trade.totalFee - fundingFeeForCalculation;
+            // Net Profit = Realized Profit - Fee + Funding Fee
+            // Funding Fee puede ser positivo (ingreso) o negativo (costo)
+            trade.netProfit = trade.realizedProfit - trade.totalFee + trade.fundingFee;
             
             // DEBUG
             console.log(`Trade ${trade.symbol}:`);
             console.log(`  Realized Profit: ${trade.realizedProfit}`);
             console.log(`  Total Fee: ${trade.totalFee}`);
-            console.log(`  Funding Fee (original): ${trade.fundingFee}`);
-            console.log(`  Funding Fee (para cálculo): ${fundingFeeForCalculation}`);
+            console.log(`  Funding Fee: ${trade.fundingFee}`);
             console.log(`  Net Profit: ${trade.netProfit}`);
-            console.log(`  Cálculo: ${trade.realizedProfit} - ${trade.totalFee} - ${fundingFeeForCalculation} = ${trade.netProfit}`);
+            console.log(`  Cálculo: ${trade.realizedProfit} - ${trade.totalFee} + ${trade.fundingFee} = ${trade.netProfit}`);
             
             return trade;
         });
@@ -1630,6 +1643,14 @@ function exportToPDF() {
                 <td class="${fundingClass} funding-column">${trade.fundingFee.toFixed(4)}</td>
                 <td class="${netClass}">${trade.netProfit.toFixed(4)}</td>
             `;
+            
+            // Agregar evento click para móviles
+            if (isMobile()) {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', function() {
+                    showTradeDetails(trade);
+                });
+            }
             
             tradesBody.appendChild(row);
             
