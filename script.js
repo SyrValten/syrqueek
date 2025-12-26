@@ -7,12 +7,15 @@ let dataTable = null;
 let allSymbols = new Set();
 let isDarkMode = false; // Variable para modo oscuro
 
+const SPREADSHEET_ID = '1_UOs_krgVKLCPAxRVUOpxcUoU87DLoCe-3qmrApT-zw';
+const API_KEY = 'AIzaSyA7mopLqNqpsAItOXdiOozIP_WUMpvKQXU';
+const sheet1Url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Hoja%201!A:Z?key=${API_KEY}`;
+const sheet2Url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Hoja%202!A:Z?key=${API_KEY}`;
+const sheet3Url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Hoja%203!A:Z?key=${API_KEY}`;
+
 // Esperar a que el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', function() {
     // Referencias a elementos del DOM
-    const csv1Input = document.getElementById('csv1');
-    const csv2Input = document.getElementById('csv2');
-    const csv3Input = document.getElementById('csv3');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const loadingElement = document.getElementById('loading');
     const tradesTable = document.getElementById('tradesTable');
@@ -78,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     helpBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        alert('Futuros Bitmart - Análisis de Trades\n\n1. Carga los archivos CSV (CSV2 y CSV3 obligatorios)\n2. Haz clic en "Analizar Trades"\n3. Usa el filtro por símbolo para ver trades específicos\n4. Los KPI se actualizan automáticamente\n5. Usa el modo oscuro/claro según tu preferencia');
+        alert('Futuros Bitmart - Análisis de Trades\n\nLos datos se cargan automáticamente desde Google Sheets al abrir la página.\nEl análisis se ejecuta automáticamente una vez cargados los datos.\n1. Espera a que se carguen las hojas (Hoja 1, Hoja 2, Hoja 3)\n2. El análisis se ejecutará automáticamente\n3. Usa el filtro por símbolo para ver trades específicos\n4. Los KPI se actualizan automáticamente\n5. Usa el modo oscuro/claro según tu preferencia');
     });
     
     themeToggle.addEventListener('change', function(e) {
@@ -935,25 +938,23 @@ function exportToPDF() {
 //FIN PDF    
     // Función para reiniciar análisis
     function resetAnalysis() {
-        if (confirm('¿Estás seguro de que quieres reiniciar el análisis? Se perderán todos los datos cargados.')) {
+        if (confirm('¿Estás seguro de que quieres reiniciar el análisis? Se recargarán los datos desde Google Sheets.')) {
             csv1Data = null;
             csv2Data = null;
             csv3Data = null;
             trades = [];
             allSymbols.clear();
             
-            // Resetear inputs de archivos
-            csv1Input.value = '';
-            csv2Input.value = '';
-            csv3Input.value = '';
-            
             // Resetear estados
-            csv1Status.textContent = 'No cargado';
+            csv1Status.textContent = 'Cargando...';
             csv1Status.classList.remove('loaded');
-            csv2Status.textContent = 'No cargado';
+            csv2Status.textContent = 'Cargando...';
             csv2Status.classList.remove('loaded');
-            csv3Status.textContent = 'No cargado';
+            csv3Status.textContent = 'Cargando...';
             csv3Status.classList.remove('loaded');
+            
+            // Recargar datos
+            loadDataFromSheets();
             
             // Resetear tabla
             if (dataTable) {
@@ -1229,6 +1230,69 @@ function exportToPDF() {
         } catch (error) {
             console.warn(`Error parseando fecha ${dateString}:`, error);
             return new Date(0);
+        }
+    }
+    
+    // Función para parsear respuesta JSON de Google Sheets API
+    function parseSheetJSON(json) {
+        if (!json.values || json.values.length === 0) {
+            return [];
+        }
+        
+        // Si los datos están en una sola columna (formato CSV), reconstruir el texto CSV
+        const csvText = json.values.map(row => row.join(',')).join('\n');
+        
+        // Usar la función parseCSV existente
+        return parseCSV(csvText);
+    }
+    
+    // Función para cargar datos desde Google Sheets
+    async function loadDataFromSheets() {
+        const urls = [sheet1Url, sheet2Url, sheet3Url];
+        const statuses = [csv1Status, csv2Status, csv3Status];
+        const sheetNames = ['Hoja 1', 'Hoja 2', 'Hoja 3'];
+
+        try {
+            const responses = await Promise.all(urls.map(url => fetch(url)));
+            const jsons = await Promise.all(responses.map(res => res.json()));
+
+            for (let i = 0; i < jsons.length; i++) {
+                console.log(`Cargando ${sheetNames[i]}`);
+                const parsedData = parseSheetJSON(jsons[i]);
+                
+                if (i === 0) {
+                    csv1Data = parsedData;
+                    console.log('Hoja 1 cargada:', csv1Data?.length || 0, 'registros');
+                } else if (i === 1) {
+                    csv2Data = parsedData;
+                    console.log('Hoja 2 cargada:', csv2Data?.length || 0, 'registros');
+                } else if (i === 2) {
+                    csv3Data = parsedData;
+                    console.log('Hoja 3 cargada:', csv3Data?.length || 0, 'registros');
+                }
+                
+                statuses[i].textContent = 'Cargado ✓';
+                statuses[i].classList.add('loaded');
+            }
+            
+            checkAnalyzeButton();
+            
+            // Si los datos requeridos están cargados, iniciar análisis automáticamente
+            if (csv2Data && csv3Data) {
+                analyzeBtn.textContent = 'Analizando automáticamente...';
+                analyzeBtn.disabled = true;
+                setTimeout(() => {
+                    analyzeTrades();
+                }, 500); // Pequeño delay para asegurar que la UI esté lista
+            }
+            
+        } catch (error) {
+            console.error('Error cargando datos desde Google Sheets:', error);
+            for (let status of statuses) {
+                status.textContent = 'Error';
+                status.classList.remove('loaded');
+            }
+            alert('Error al cargar datos desde Google Sheets. Verifica la API key y que las hojas existan.');
         }
     }
     
@@ -1660,10 +1724,8 @@ function exportToPDF() {
         }, 100);
     }
     
-    // Configurar event listeners para carga de archivos
-    handleFileUpload(csv1Input, csv1Status);
-    handleFileUpload(csv2Input, csv2Status);
-    handleFileUpload(csv3Input, csv3Status);
+    // Cargar datos desde Google Sheets
+    loadDataFromSheets();
     
     // Event listener para el botón de análisis
     analyzeBtn.addEventListener('click', analyzeTrades);
