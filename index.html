@@ -56,22 +56,19 @@
         <!-- Sección de Upload (se ocultará después del análisis) -->
         <div class="upload-section">
             <div class="upload-box">
-                <h3>Cargar Archivos CSV</h3>
+                <h3>Cargando Datos desde Google Sheets</h3>
                 <div class="file-inputs">
                     <div class="file-input">
-                        <label for="csv1">CSV1 (Órdenes):</label>
-                        <input type="file" id="csv1" accept=".csv">
-                        <span id="csv1-status" class="file-status">No cargado</span>
+                        <label>Hoja 1 (Órdenes):</label>
+                        <span id="csv1-status" class="file-status">Cargando...</span>
                     </div>
                     <div class="file-input">
-                        <label for="csv2">CSV2 (Trades):</label>
-                        <input type="file" id="csv2" accept=".csv">
-                        <span id="csv2-status" class="file-status">No cargado</span>
+                        <label>Hoja 2 (Trades):</label>
+                        <span id="csv2-status" class="file-status">Cargando...</span>
                     </div>
                     <div class="file-input">
-                        <label for="csv3">CSV3 (Fees y Funding):</label>
-                        <input type="file" id="csv3" accept=".csv">
-                        <span id="csv3-status" class="file-status">No cargado</span>
+                        <label>Hoja 3 (Fees y Funding):</label>
+                        <span id="csv3-status" class="file-status">Cargando...</span>
                     </div>
                 </div>
                 
@@ -187,11 +184,6 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="charts.js"></script>
-    <script src="script.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="charts.js"></script>
