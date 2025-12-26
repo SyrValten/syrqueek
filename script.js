@@ -7,6 +7,11 @@ let dataTable = null;
 let allSymbols = new Set();
 let isDarkMode = false; // Variable para modo oscuro
 
+// Función para detectar si está en modo móvil
+function isMobile() {
+    return window.innerWidth < 768;
+}
+
 const SPREADSHEET_ID = '1_UOs_krgVKLCPAxRVUOpxcUoU87DLoCe-3qmrApT-zw';
 const API_KEY = 'AIzaSyA7mopLqNqpsAItOXdiOozIP_WUMpvKQXU';
 const sheet1Url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Hoja%201!A:Z?key=${API_KEY}`;
@@ -1589,7 +1594,7 @@ function exportToPDF() {
         tradesBody.innerHTML = '';
         
         if (!trades || trades.length === 0) {
-            tradesBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay trades para mostrar</td></tr>';
+            tradesBody.innerHTML = `<tr><td colspan="${isMobile() ? 4 : 6}" style="text-align: center;">No hay trades para mostrar</td></tr>`;
             tradesTable.style.display = 'table';
             return;
         }
@@ -1605,6 +1610,7 @@ function exportToPDF() {
         });
         
         // Agregar cada trade a la tabla
+        const mobile = isMobile();
         for (const trade of sortedTrades) {
             const row = document.createElement('tr');
             
@@ -1617,14 +1623,23 @@ function exportToPDF() {
             const fundingClass = trade.fundingFee < 0 ? 'negative' : 'positive';
             const netClass = trade.netProfit >= 0 ? 'positive' : 'negative';
             
-            row.innerHTML = `
-                <td>${displayDate}</td>
-                <td>${trade.symbol}</td>
-                <td class="${realizedClass}">${trade.realizedProfit.toFixed(4)}</td>
-                <td class="${feeClass}">${trade.totalFee.toFixed(4)}</td>
-                <td class="${fundingClass}">${trade.fundingFee.toFixed(4)}</td>
-                <td class="${netClass}">${trade.netProfit.toFixed(4)}</td>
-            `;
+            if (mobile) {
+                row.innerHTML = `
+                    <td>${displayDate}</td>
+                    <td>${trade.symbol}</td>
+                    <td class="${realizedClass}">${trade.realizedProfit.toFixed(4)}</td>
+                    <td class="${netClass}">${trade.netProfit.toFixed(4)}</td>
+                `;
+            } else {
+                row.innerHTML = `
+                    <td>${displayDate}</td>
+                    <td>${trade.symbol}</td>
+                    <td class="${realizedClass}">${trade.realizedProfit.toFixed(4)}</td>
+                    <td class="${feeClass}">${trade.totalFee.toFixed(4)}</td>
+                    <td class="${fundingClass}">${trade.fundingFee.toFixed(4)}</td>
+                    <td class="${netClass}">${trade.netProfit.toFixed(4)}</td>
+                `;
+            }
             
             tradesBody.appendChild(row);
             
